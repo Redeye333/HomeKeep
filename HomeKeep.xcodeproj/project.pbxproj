@@ -242,12 +242,10 @@
 			buildPhases = (
 				4159BCC5BBBE3EC038608F64 /* Sources */,
 				37EA0F32D5B660406F7E5F75 /* Resources */,
-				9F7EB5AAFD334A3F0F04B9CE /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				F226F8E54D4BE0D819163723 /* PBXTargetDependency */,
 			);
 			name = HomeKeep;
 			packageProductDependencies = (
