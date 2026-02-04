@@ -1,0 +1,58 @@
+name: HomeKeep
+options:
+  bundleIdPrefix: com.homekeep
+  deploymentTarget:
+    iOS: "18.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    INFOPLIST_KEY_CFBundleDisplayName: HomeKeep
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: 1
+    SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
+    SUPPORTS_MACCATALYST: false
+
+targets:
+  HomeKeep:
+    type: application
+    platform: iOS
+    sources:
+      - path: HomeKeep
+        excludes:
+          - "*.entitlements"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.homekeep.app
+        INFOPLIST_FILE: HomeKeep/Info.plist
+        CODE_SIGN_ENTITLEMENTS: HomeKeep/HomeKeep.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        ENABLE_PREVIEWS: true
+    dependencies:
+      - target: HomeKeepWidgetsExtension
+
+  HomeKeepWidgetsExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: HomeKeepWidgets
+        excludes:
+          - "*.entitlements"
+      - path: HomeKeep/Models
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.homekeep.app.widgets
+        CODE_SIGN_ENTITLEMENTS: HomeKeepWidgets/HomeKeepWidgets.entitlements
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        INFOPLIST_KEY_CFBundleDisplayName: HomeKeep Widgets
+        INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        GENERATE_INFOPLIST_FILE: true
+        SKIP_INSTALL: true
