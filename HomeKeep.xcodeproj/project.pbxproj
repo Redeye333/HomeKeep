@@ -295,7 +295,6 @@
 			projectRoot = "";
 			targets = (
 				218DE0DF09CEE5182816597D /* HomeKeep */,
-				7AEEC4A2CBD4605F96C702EF /* HomeKeepWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
