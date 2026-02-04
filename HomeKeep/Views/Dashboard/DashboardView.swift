@@ -19,14 +19,10 @@ struct DashboardView: View {
                 }
             }
             .navigationTitle("HomeKeep")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
+            .overlay(alignment: .bottomTrailing) {
+                if !tasks.isEmpty {
+                    FloatingAddButton {
                         viewModel.showingAddTasks = true
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title3)
-                            .foregroundStyle(Theme.accent)
                     }
                 }
             }
@@ -39,112 +35,136 @@ struct DashboardView: View {
         }
         .tint(Theme.accent)
         .onAppear {
-            Task {
-                let overdueCount = viewModel.overdueTasks(from: tasks).count
-                NotificationManager.shared.updateBadge(overdueCount: overdueCount)
-            }
+            let overdueCount = viewModel.overdueTasks(from: tasks).count
+            NotificationManager.shared.updateBadge(overdueCount: overdueCount)
         }
     }
+
+    // MARK: - Task List
 
     private var taskList: some View {
-        ScrollView {
-            LazyVStack(spacing: 16) {
-                // Summary header
-                summaryHeader
+        List {
+            // Summary header
+            summarySection
 
-                // Overdue section
-                let overdue = viewModel.overdueTasks(from: tasks)
-                if !overdue.isEmpty {
-                    sectionHeader("Overdue", color: Theme.overdue, count: overdue.count)
+            // Overdue
+            let overdue = viewModel.overdueTasks(from: tasks)
+            if !overdue.isEmpty {
+                Section {
                     ForEach(overdue) { task in
-                        TaskCardView(
-                            task: task,
-                            isCompleted: viewModel.completedTaskID == task.id,
-                            onTap: { viewModel.showingTaskDetail = task },
-                            onComplete: { viewModel.markTaskComplete(task, settings: settings) }
-                        )
+                        taskRow(task)
                     }
-                }
-
-                // Due soon section
-                let dueSoon = viewModel.dueSoonTasks(from: tasks)
-                if !dueSoon.isEmpty {
-                    sectionHeader("Due This Week", color: Theme.dueSoon, count: dueSoon.count)
-                    ForEach(dueSoon) { task in
-                        TaskCardView(
-                            task: task,
-                            isCompleted: viewModel.completedTaskID == task.id,
-                            onTap: { viewModel.showingTaskDetail = task },
-                            onComplete: { viewModel.markTaskComplete(task, settings: settings) }
-                        )
+                    .onDelete { indexSet in
+                        deleteItems(indexSet, from: overdue)
                     }
-                }
-
-                // Good section
-                let good = viewModel.goodTasks(from: tasks)
-                if !good.isEmpty {
-                    sectionHeader("All Good", color: Theme.good, count: good.count)
-                    ForEach(good) { task in
-                        TaskCardView(
-                            task: task,
-                            isCompleted: viewModel.completedTaskID == task.id,
-                            onTap: { viewModel.showingTaskDetail = task },
-                            onComplete: { viewModel.markTaskComplete(task, settings: settings) }
-                        )
-                    }
+                } header: {
+                    Label("Overdue", systemImage: "exclamationmark.circle.fill")
+                        .foregroundStyle(Theme.overdue)
+                        .font(.subheadline.weight(.semibold))
                 }
             }
-            .padding()
+
+            // Due Soon
+            let dueSoon = viewModel.dueSoonTasks(from: tasks)
+            if !dueSoon.isEmpty {
+                Section {
+                    ForEach(dueSoon) { task in
+                        taskRow(task)
+                    }
+                    .onDelete { indexSet in
+                        deleteItems(indexSet, from: dueSoon)
+                    }
+                } header: {
+                    Label("Due Soon", systemImage: "clock.fill")
+                        .foregroundStyle(Theme.dueSoon)
+                        .font(.subheadline.weight(.semibold))
+                }
+            }
+
+            // Up Next
+            let good = viewModel.goodTasks(from: tasks)
+            if !good.isEmpty {
+                Section {
+                    ForEach(good) { task in
+                        taskRow(task)
+                    }
+                    .onDelete { indexSet in
+                        deleteItems(indexSet, from: good)
+                    }
+                } header: {
+                    Label("Up Next", systemImage: "calendar")
+                        .font(.subheadline.weight(.semibold))
+                }
+            }
         }
-        .background(Color(.systemGroupedBackground))
+        .listStyle(.insetGrouped)
     }
 
-    private var summaryHeader: some View {
+    // MARK: - Summary
+
+    private var summarySection: some View {
         let count = viewModel.attentionCount(from: tasks)
-        return Group {
+        return Section {
             if count > 0 {
-                HStack {
+                HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.circle.fill")
-                        .foregroundStyle(count > 0 ? Theme.overdue : Theme.good)
+                        .foregroundStyle(Theme.overdue)
                     Text("\(count) \(count == 1 ? "task needs" : "tasks need") attention")
-                        .font(.headline)
-                    Spacer()
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
-                        .fill(Theme.overdue.opacity(0.1))
-                )
             } else {
-                HStack {
+                HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(Theme.good)
-                    Text("Your home is in great shape!")
-                        .font(.headline)
-                    Spacer()
+                    Text("Your home is in great shape")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
-                        .fill(Theme.good.opacity(0.1))
-                )
             }
         }
     }
 
-    private func sectionHeader(_ title: String, color: Color, count: Int) -> some View {
-        HStack {
-            Circle()
-                .fill(color)
-                .frame(width: 8, height: 8)
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Text("(\(count))")
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
-            Spacer()
+    // MARK: - Row
+
+    private func taskRow(_ task: MaintenanceTask) -> some View {
+        Button {
+            viewModel.showingTaskDetail = task
+        } label: {
+            TaskRowView(
+                task: task,
+                isCompleted: viewModel.completedTaskID == task.id,
+                onComplete: {
+                    viewModel.markTaskComplete(task, settings: settings)
+                }
+            )
         }
-        .padding(.top, 8)
+        .buttonStyle(.plain)
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button {
+                viewModel.markTaskComplete(task, settings: settings)
+            } label: {
+                Label("Done", systemImage: "checkmark")
+            }
+            .tint(Theme.accent)
+        }
+        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            Button(role: .destructive) {
+                NotificationManager.shared.cancelNotification(for: task)
+                modelContext.delete(task)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+    }
+
+    // MARK: - Actions
+
+    private func deleteItems(_ offsets: IndexSet, from sectionTasks: [MaintenanceTask]) {
+        for index in offsets {
+            let task = sectionTasks[index]
+            NotificationManager.shared.cancelNotification(for: task)
+            modelContext.delete(task)
+        }
     }
 }

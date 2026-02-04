@@ -42,7 +42,7 @@ struct IconPickerView: View {
                             dismiss()
                         } label: {
                             ZStack {
-                                RoundedRectangle(cornerRadius: 12)
+                                RoundedRectangle(cornerRadius: 10)
                                     .fill(selectedIcon == icon ? Theme.accent : Color(.tertiarySystemFill))
                                     .frame(height: 52)
 

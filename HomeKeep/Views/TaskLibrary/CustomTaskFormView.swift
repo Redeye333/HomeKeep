@@ -20,24 +20,21 @@ struct CustomTaskFormView: View {
     var body: some View {
         NavigationStack {
             Form {
-                // Task name
-                Section("Task Name") {
+                Section("Name") {
                     TextField("e.g., Clean gutters", text: $name)
                 }
 
-                // Icon
                 Section("Icon") {
                     Button {
                         showingIconPicker = true
                     } label: {
                         HStack {
                             ZStack {
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Theme.accent.opacity(0.15))
-                                    .frame(width: 44, height: 44)
-
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Theme.accent.opacity(0.12))
+                                    .frame(width: 36, height: 36)
                                 Image(systemName: icon)
-                                    .font(.title3)
+                                    .font(.subheadline)
                                     .foregroundStyle(Theme.accent)
                             }
 
@@ -47,13 +44,12 @@ struct CustomTaskFormView: View {
                             Spacer()
 
                             Image(systemName: "chevron.right")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.tertiary)
                         }
                     }
                 }
 
-                // Frequency
                 Section("Frequency") {
                     Picker("Type", selection: $frequencyType) {
                         ForEach(FrequencyType.allCases) { type in
@@ -62,18 +58,20 @@ struct CustomTaskFormView: View {
                     }
 
                     if frequencyType != .seasonal {
-                        Stepper("Every \(frequencyValue) \(frequencyValue == 1 ? String(frequencyType.pluralUnit.dropLast()) : frequencyType.pluralUnit)",
-                                value: $frequencyValue, in: 1...100)
+                        Stepper(
+                            "Every \(frequencyValue) \(frequencyValue == 1 ? String(frequencyType.pluralUnit.dropLast()) : frequencyType.pluralUnit)",
+                            value: $frequencyValue,
+                            in: 1...100
+                        )
                     }
                 }
 
-                // Notes
-                Section("Notes (Optional)") {
-                    TextField("Any helpful reminders...", text: $notes, axis: .vertical)
+                Section("Notes") {
+                    TextField("Any helpful reminders…", text: $notes, axis: .vertical)
                         .lineLimit(3...6)
                 }
             }
-            .navigationTitle("Custom Task")
+            .navigationTitle("New Task")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {

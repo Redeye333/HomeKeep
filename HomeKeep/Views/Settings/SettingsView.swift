@@ -5,14 +5,18 @@ struct SettingsView: View {
     @Bindable var settings: UserSettings
     @Query private var tasks: [MaintenanceTask]
     @State private var storeManager = StoreManager.shared
-    @State private var showingProPurchase = false
-    @State private var isPurchasing = false
+    @State private var showingProUpsell = false
+    @State private var showExportUpsell = false
+
+    private var isPro: Bool {
+        settings.isProUnlocked || storeManager.isProUnlocked
+    }
 
     var body: some View {
         NavigationStack {
             Form {
                 // Notifications
-                Section {
+                Section("Notifications") {
                     DatePicker(
                         "Reminder Time",
                         selection: Binding(
@@ -23,19 +27,17 @@ struct SettingsView: View {
                     )
 
                     Stepper(
-                        "Notify \(settings.daysBeforeDue) \(settings.daysBeforeDue == 1 ? "day" : "days") before due",
+                        "Notify \(settings.daysBeforeDue) \(settings.daysBeforeDue == 1 ? "day" : "days") before",
                         value: Binding(
                             get: { settings.daysBeforeDue },
                             set: { settings.daysBeforeDue = $0 }
                         ),
                         in: 0...14
                     )
-                } header: {
-                    Label("Notifications", systemImage: "bell")
                 }
 
                 // Appearance
-                Section {
+                Section("Appearance") {
                     Picker("Theme", selection: Binding(
                         get: { settings.appearanceMode },
                         set: { settings.appearanceMode = $0 }
@@ -44,49 +46,62 @@ struct SettingsView: View {
                             Text(mode.displayName).tag(mode)
                         }
                     }
-                } header: {
-                    Label("Appearance", systemImage: "paintbrush")
+
+                    if isPro {
+                        NavigationLink {
+                            Text("App Icon picker coming soon")
+                                .foregroundStyle(.secondary)
+                        } label: {
+                            Text("App Icon")
+                        }
+                    } else {
+                        Button {
+                            showingProUpsell = true
+                        } label: {
+                            HStack {
+                                Text("App Icon")
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                ProBadgeView()
+                            }
+                        }
+                    }
                 }
 
                 // HomeKeep Pro
                 Section {
-                    if settings.isProUnlocked || storeManager.isProUnlocked {
+                    if isPro {
                         HStack {
                             Label("HomeKeep Pro", systemImage: "star.fill")
-                                .foregroundStyle(Theme.accent)
+                                .foregroundStyle(.orange)
                             Spacer()
                             Text("Unlocked")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
-                                .background(
-                                    Capsule().fill(Theme.accent.opacity(0.15))
-                                )
                         }
                     } else {
                         Button {
-                            showingProPurchase = true
+                            showingProUpsell = true
                         } label: {
                             HStack {
                                 Label {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("Upgrade to Pro")
                                             .foregroundStyle(.primary)
-                                        Text("Unlock widgets & more • $2.99")
+                                        Text("Unlimited tasks, widgets & more · \(Theme.proPrice)")
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
                                 } icon: {
                                     Image(systemName: "star.circle.fill")
-                                        .foregroundStyle(.yellow)
+                                        .foregroundStyle(.orange)
                                 }
 
                                 Spacer()
 
                                 Image(systemName: "chevron.right")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
                             }
                         }
                     }
@@ -100,29 +115,41 @@ struct SettingsView: View {
                         }
                     }
                 } header: {
-                    Label("HomeKeep Pro", systemImage: "star")
+                    Text("HomeKeep Pro")
                 }
 
-                // Data
-                Section {
+                // Export
+                Section("Data") {
                     HStack {
                         Text("Active Tasks")
                         Spacer()
                         Text("\(tasks.count)")
                             .foregroundStyle(.secondary)
                     }
-                } header: {
-                    Label("Data", systemImage: "chart.bar")
+
+                    if isPro {
+                        Button {
+                            exportCSV()
+                        } label: {
+                            Label("Export History", systemImage: "square.and.arrow.up")
+                        }
+                    } else {
+                        Button {
+                            showExportUpsell = true
+                        } label: {
+                            HStack {
+                                Label("Export History", systemImage: "square.and.arrow.up")
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                ProBadgeView()
+                            }
+                        }
+                    }
                 }
 
                 // About
-                Section {
-                    HStack {
-                        Text("Version")
-                        Spacer()
-                        Text("1.0.0")
-                            .foregroundStyle(.secondary)
-                    }
+                Section("About") {
+                    LabeledContent("Version", value: "1.0.0")
 
                     Link(destination: URL(string: "https://github.com/johndaly/HomeKeep")!) {
                         HStack {
@@ -130,25 +157,21 @@ struct SettingsView: View {
                                 .foregroundStyle(.primary)
                             Spacer()
                             Image(systemName: "arrow.up.right.square")
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     }
-                } header: {
-                    Label("About", systemImage: "info.circle")
                 }
             }
             .navigationTitle("Settings")
-            .onChange(of: settings.reminderHour) { _, _ in
-                rescheduleAll()
+            .onChange(of: settings.reminderHour) { _, _ in rescheduleAll() }
+            .onChange(of: settings.reminderMinute) { _, _ in rescheduleAll() }
+            .onChange(of: settings.daysBeforeDue) { _, _ in rescheduleAll() }
+            .sheet(isPresented: $showingProUpsell) {
+                ProUpsellSheet(settings: settings, feature: "This feature")
             }
-            .onChange(of: settings.reminderMinute) { _, _ in
-                rescheduleAll()
-            }
-            .onChange(of: settings.daysBeforeDue) { _, _ in
-                rescheduleAll()
-            }
-            .sheet(isPresented: $showingProPurchase) {
-                ProPurchaseView(settings: settings)
+            .sheet(isPresented: $showExportUpsell) {
+                ProUpsellSheet(settings: settings, feature: "Export history")
             }
         }
     }
@@ -158,142 +181,23 @@ struct SettingsView: View {
             NotificationManager.shared.rescheduleAllNotifications(tasks: tasks, settings: settings)
         }
     }
-}
 
-// MARK: - Pro Purchase View
-
-struct ProPurchaseView: View {
-    @Bindable var settings: UserSettings
-    @Environment(\.dismiss) private var dismiss
-    @State private var storeManager = StoreManager.shared
-    @State private var isPurchasing = false
-    @State private var showError = false
-    @State private var errorMessage = ""
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 32) {
-                Spacer()
-
-                // Icon
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [.yellow, .orange],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 100, height: 100)
-
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 44))
-                        .foregroundStyle(.white)
-                }
-
-                VStack(spacing: 8) {
-                    Text("HomeKeep Pro")
-                        .font(.title.weight(.bold))
-
-                    Text("One-time purchase. No subscription.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-
-                // Features
-                VStack(alignment: .leading, spacing: 16) {
-                    featureRow("widget", "Home Screen & Lock Screen Widgets")
-                    featureRow("paintbrush", "Custom Themes")
-                    featureRow("heart.fill", "Support Development")
-                }
-                .padding(.horizontal, 32)
-
-                Spacer()
-
-                // Purchase button
-                Button {
-                    purchasePro()
-                } label: {
-                    Group {
-                        if isPurchasing {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Text("Purchase for $2.99")
-                                .font(.headline)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Theme.accent)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadius))
-                }
-                .disabled(isPurchasing)
-                .padding(.horizontal)
-
-                Button("Restore Purchases") {
-                    Task {
-                        await storeManager.restorePurchases()
-                        if storeManager.isProUnlocked {
-                            settings.isProUnlocked = true
-                            dismiss()
-                        }
-                    }
-                }
-                .font(.subheadline)
-                .padding(.bottom, 32)
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Close") { dismiss() }
-                }
-            }
-            .alert("Purchase Error", isPresented: $showError) {
-                Button("OK") {}
-            } message: {
-                Text(errorMessage)
-            }
-            .task {
-                await storeManager.loadProducts()
-            }
-        }
-    }
-
-    private func featureRow(_ icon: String, _ text: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(Theme.accent)
-                .frame(width: 28)
-
-            Text(text)
-                .font(.body)
-        }
-    }
-
-    private func purchasePro() {
-        guard let product = storeManager.products.first else {
-            errorMessage = "Product not available. Please try again later."
-            showError = true
-            return
+    private func exportCSV() {
+        var csv = "Name,Status,Frequency,Next Due,Last Completed\n"
+        for task in tasks {
+            let lastCompleted = task.lastCompletedDate.map {
+                DateFormatter.mediumDate.string(from: $0)
+            } ?? "Never"
+            csv += "\"\(task.name)\",\"\(task.status)\",\"\(task.frequencyDescription)\",\"\(DateFormatter.mediumDate.string(from: task.nextDueDate))\",\"\(lastCompleted)\"\n"
         }
 
-        isPurchasing = true
-        Task {
-            do {
-                let success = try await storeManager.purchase(product)
-                if success {
-                    settings.isProUnlocked = true
-                    HapticManager.taskCompleted()
-                    dismiss()
-                }
-            } catch {
-                errorMessage = error.localizedDescription
-                showError = true
-            }
-            isPurchasing = false
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("HomeKeep_Export.csv")
+        try? csv.write(to: tempURL, atomically: true, encoding: .utf8)
+
+        let activityVC = UIActivityViewController(activityItems: [tempURL], applicationActivities: nil)
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let root = windowScene.windows.first?.rootViewController {
+            root.present(activityVC, animated: true)
         }
     }
 }

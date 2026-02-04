@@ -7,10 +7,9 @@ struct TaskDetailView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var showCompletionAnimation = false
-    @State private var isEditing = false
     @State private var showDeleteConfirmation = false
 
-    var statusColor: Color {
+    private var statusColor: Color {
         switch task.status {
         case .overdue: return Theme.overdue
         case .dueSoon: return Theme.dueSoon
@@ -20,28 +19,94 @@ struct TaskDetailView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Header card
-                    headerCard
+            ZStack(alignment: .bottom) {
+                Form {
+                    // Info section
+                    Section {
+                        HStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(statusColor.opacity(0.12))
+                                    .frame(width: 40, height: 40)
+                                Image(systemName: task.icon)
+                                    .font(.body)
+                                    .foregroundStyle(statusColor)
+                            }
 
-                    // Info cards
-                    infoSection
-
-                    // Notes
-                    if let notes = task.notes, !notes.isEmpty {
-                        notesCard(notes)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(task.name)
+                                    .font(.headline)
+                                StatusBadgeView(status: task.status)
+                            }
+                        }
+                        .padding(.vertical, 4)
                     }
 
-                    // Mark Done button
-                    markDoneButton
+                    // Schedule section
+                    Section("Schedule") {
+                        LabeledContent("Frequency") {
+                            Text(task.frequencyDescription)
+                        }
 
-                    // Delete button
-                    deleteButton
+                        LabeledContent("Next Due") {
+                            Text(task.dueDescription)
+                                .foregroundStyle(statusColor)
+                        }
+
+                        LabeledContent("Due Date") {
+                            Text(DateFormatter.mediumDate.string(from: task.nextDueDate))
+                        }
+
+                        LabeledContent("Last Completed") {
+                            Text(task.lastCompletedDate.map {
+                                DateFormatter.mediumDate.string(from: $0)
+                            } ?? "Never")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    // Notes section
+                    if let notes = task.notes, !notes.isEmpty {
+                        Section("Notes") {
+                            Text(notes)
+                                .font(.body)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    // Danger zone
+                    Section {
+                        Button(role: .destructive) {
+                            showDeleteConfirmation = true
+                        } label: {
+                            Label("Delete Task", systemImage: "trash")
+                        }
+                    }
+
+                    // Bottom spacer for the sticky button
+                    Section {} footer: {
+                        Spacer()
+                            .frame(height: 72)
+                    }
                 }
-                .padding()
+
+                // Sticky Mark Done button
+                VStack {
+                    Button {
+                        markComplete()
+                    } label: {
+                        Label("Mark Done", systemImage: "checkmark.circle.fill")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Theme.accent)
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+                }
+                .background(.bar)
             }
-            .background(Color(.systemGroupedBackground))
             .navigationTitle("Task Detail")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -62,177 +127,37 @@ struct TaskDetailView: View {
                     dismiss()
                 }
             } message: {
-                Text("Are you sure you want to delete \"\(task.name)\"? This cannot be undone.")
+                Text("Are you sure you want to delete \"\(task.name)\"?")
             }
         }
     }
 
-    // MARK: - Header Card
-
-    private var headerCard: some View {
-        VStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(statusColor.opacity(0.15))
-                    .frame(width: 80, height: 80)
-
-                Image(systemName: task.icon)
-                    .font(.system(size: 32))
-                    .foregroundStyle(statusColor)
-            }
-
-            Text(task.name)
-                .font(.title2.weight(.bold))
-                .multilineTextAlignment(.center)
-
-            Text(task.dueDescription)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(statusColor)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 6)
-                .background(
-                    Capsule()
-                        .fill(statusColor.opacity(0.12))
-                )
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
-                .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(Theme.cardShadowOpacity), radius: Theme.cardShadowRadius, y: 2)
-        )
-    }
-
-    // MARK: - Info Section
-
-    private var infoSection: some View {
-        VStack(spacing: 1) {
-            infoRow(icon: "repeat", label: "Frequency", value: task.frequencyDescription)
-
-            Divider().padding(.leading, 52)
-
-            infoRow(
-                icon: "checkmark.circle",
-                label: "Last Completed",
-                value: task.lastCompletedDate.map {
-                    DateFormatter.mediumDate.string(from: $0)
-                } ?? "Never"
-            )
-
-            Divider().padding(.leading, 52)
-
-            infoRow(
-                icon: "calendar",
-                label: "Next Due",
-                value: DateFormatter.mediumDate.string(from: task.nextDueDate)
-            )
-        }
-        .background(
-            RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
-                .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(Theme.cardShadowOpacity), radius: Theme.cardShadowRadius, y: 2)
-        )
-    }
-
-    private func infoRow(icon: String, label: String, value: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.body)
-                .foregroundStyle(Theme.accent)
-                .frame(width: 28)
-
-            Text(label)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Spacer()
-
-            Text(value)
-                .font(.subheadline.weight(.medium))
-        }
-        .padding()
-    }
-
-    // MARK: - Notes Card
-
-    private func notesCard(_ notes: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Notes", systemImage: "note.text")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            Text(notes)
-                .font(.body)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
-                .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(Theme.cardShadowOpacity), radius: Theme.cardShadowRadius, y: 2)
-        )
-    }
-
-    // MARK: - Mark Done Button
-
-    private var markDoneButton: some View {
-        Button {
-            markComplete()
-        } label: {
-            Label("Mark Done", systemImage: "checkmark.circle.fill")
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Theme.accent)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadius))
-                .shadow(color: Theme.accent.opacity(0.3), radius: 8, y: 4)
-        }
-        .padding(.top, 8)
-    }
-
-    // MARK: - Delete Button
-
-    private var deleteButton: some View {
-        Button(role: .destructive) {
-            showDeleteConfirmation = true
-        } label: {
-            Label("Delete Task", systemImage: "trash")
-                .font(.subheadline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-        }
-    }
-
-    // MARK: - Completion Animation
+    // MARK: - Completion Overlay
 
     private var completionOverlay: some View {
         ZStack {
-            Color.black.opacity(0.3)
+            Color.black.opacity(0.2)
                 .ignoresSafeArea()
                 .onTapGesture {
-                    withAnimation {
-                        showCompletionAnimation = false
-                    }
+                    withAnimation { showCompletionAnimation = false }
                 }
 
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 72))
+                    .font(.system(size: 56))
                     .foregroundStyle(Theme.accent)
                     .symbolEffect(.bounce, value: showCompletionAnimation)
 
                 Text("Done!")
-                    .font(.title.weight(.bold))
+                    .font(.title3.weight(.semibold))
 
                 Text("Next due \(DateFormatter.mediumDate.string(from: task.nextDueDate))")
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            .padding(40)
+            .padding(32)
             .background(
-                RoundedRectangle(cornerRadius: 24)
+                RoundedRectangle(cornerRadius: 16)
                     .fill(.ultraThinMaterial)
             )
             .transition(.scale.combined(with: .opacity))
@@ -251,9 +176,7 @@ struct TaskDetailView: View {
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            withAnimation {
-                showCompletionAnimation = false
-            }
+            withAnimation { showCompletionAnimation = false }
         }
     }
 }

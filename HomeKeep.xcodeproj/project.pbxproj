@@ -18,7 +18,10 @@
 		33D25CDBEB37F002E7CDD197 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 324D287E515F4F9CAD1C9676 /* HapticManager.swift */; };
 		358A01C6B83E5A2B205A6769 /* HomeScreenWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55ADC5B790D914ABCCD1ABF3 /* HomeScreenWidget.swift */; };
 		36BEDFB787DE7FD5585C54D9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 21E442AE0CFD1AA4187B9656 /* Assets.xcassets */; };
-		38C15B5D7B3F2024A74BCA44 /* TaskCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD6C2155931B7CB19BB8838 /* TaskCardView.swift */; };
+		A1B2C3D4E5F60001A0000001 /* TaskRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60002A0000001 /* TaskRowView.swift */; };
+		A1B2C3D4E5F60001A0000002 /* StatusBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60002A0000002 /* StatusBadgeView.swift */; };
+		A1B2C3D4E5F60001A0000003 /* FloatingAddButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60002A0000003 /* FloatingAddButton.swift */; };
+		A1B2C3D4E5F60001A0000004 /* ProBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60002A0000004 /* ProBadgeView.swift */; };
 		48894DEB82C49CFFCC9F303B /* HomeKeepApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CA9914350FE9CF939C22423 /* HomeKeepApp.swift */; };
 		5A4214C7B291FFE26C4C4F66 /* PreloadedTasks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06319F7FDDE376C7D8D7E217 /* PreloadedTasks.swift */; };
 		5BDB26AC045A5E0EB3CA31B9 /* HomeKeepWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C37C34E68330381E43B579A7 /* HomeKeepWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -83,7 +86,10 @@
 		845C74AB83CB9CF8AF2D0753 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8DF52E5F86CD5B43B838EEB1 /* CustomTaskFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTaskFormView.swift; sourceTree = "<group>"; };
 		93A34898E2A3E797D2EB7EC7 /* FrequencyType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrequencyType.swift; sourceTree = "<group>"; };
-		ACD6C2155931B7CB19BB8838 /* TaskCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskCardView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60002A0000001 /* TaskRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskRowView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60002A0000002 /* StatusBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadgeView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60002A0000003 /* FloatingAddButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingAddButton.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60002A0000004 /* ProBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProBadgeView.swift; sourceTree = "<group>"; };
 		C375A3C89CFFBA143B5C244E /* LockScreenWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreenWidget.swift; sourceTree = "<group>"; };
 		C37C34E68330381E43B579A7 /* HomeKeepWidgetsExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = HomeKeepWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C78ADEDC77B2AD28803C899F /* TaskLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskLibraryView.swift; sourceTree = "<group>"; };
@@ -108,7 +114,11 @@
 			isa = PBXGroup;
 			children = (
 				CE63800959C0D6CEDCBE08A2 /* EmptyStateView.swift */,
+				A1B2C3D4E5F60002A0000003 /* FloatingAddButton.swift */,
 				5B95C7079F2138AE05DF4A13 /* IconPickerView.swift */,
+				A1B2C3D4E5F60002A0000004 /* ProBadgeView.swift */,
+				A1B2C3D4E5F60002A0000002 /* StatusBadgeView.swift */,
+				A1B2C3D4E5F60002A0000001 /* TaskRowView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -184,7 +194,6 @@
 			isa = PBXGroup;
 			children = (
 				1982F3E8716BD17641D26078 /* DashboardView.swift */,
-				ACD6C2155931B7CB19BB8838 /* TaskCardView.swift */,
 			);
 			path = Dashboard;
 			sourceTree = "<group>";
@@ -337,7 +346,10 @@
 				5A4214C7B291FFE26C4C4F66 /* PreloadedTasks.swift in Sources */,
 				1B6DFA7A3A3708FF11D8014D /* SettingsView.swift in Sources */,
 				FC465F6252621A078BB9FD15 /* StoreManager.swift in Sources */,
-				38C15B5D7B3F2024A74BCA44 /* TaskCardView.swift in Sources */,
+				A1B2C3D4E5F60001A0000001 /* TaskRowView.swift in Sources */,
+				A1B2C3D4E5F60001A0000002 /* StatusBadgeView.swift in Sources */,
+				A1B2C3D4E5F60001A0000003 /* FloatingAddButton.swift in Sources */,
+				A1B2C3D4E5F60001A0000004 /* ProBadgeView.swift in Sources */,
 				094B2068D358EB53C69E256D /* TaskDetailView.swift in Sources */,
 				0A20E1D6B672003C7FFAD07F /* TaskLibraryView.swift in Sources */,
 				6E9A21843512A144002DDF26 /* TaskLibraryViewModel.swift in Sources */,
