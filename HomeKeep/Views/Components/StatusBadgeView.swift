@@ -20,14 +20,6 @@ struct StatusBadgeView: View {
     }
 
     var body: some View {
-        Text(label)
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(color)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(
-                Capsule()
-                    .fill(color.opacity(0.12))
-            )
+        HKChip(label: label, color: color)
     }
 }

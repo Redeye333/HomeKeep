@@ -5,10 +5,12 @@ struct TaskLibraryView: View {
     @Query(sort: \MaintenanceTask.nextDueDate) private var existingTasks: [MaintenanceTask]
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var viewModel = TaskLibraryViewModel()
     @Bindable var settings: UserSettings
     @State private var selectedSegment = 0
     @State private var showProUpsell = false
+    @State private var templateToCustomize: PreloadedTaskTemplate?
 
     private var isPro: Bool {
         settings.isProUnlocked || StoreManager.shared.isProUnlocked
@@ -20,22 +22,24 @@ struct TaskLibraryView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Segment control
-                Picker("View", selection: $selectedSegment) {
-                    Text("My Tasks").tag(0)
-                    Text("Library").tag(1)
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
-                .padding(.vertical, 8)
+            ZStack {
+                AppBackgroundView()
 
-                // Content
-                Group {
-                    if selectedSegment == 0 {
-                        myTasksList
-                    } else {
-                        libraryList
+                VStack(spacing: 0) {
+                    Picker("View", selection: $selectedSegment) {
+                        Text("My Tasks").tag(0)
+                        Text("Library").tag(1)
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal, Theme.spacing16)
+                    .padding(.vertical, Theme.spacing8)
+
+                    Group {
+                        if selectedSegment == 0 {
+                            myTasksList
+                        } else {
+                            libraryList
+                        }
                     }
                 }
             }
@@ -45,10 +49,17 @@ struct TaskLibraryView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
                         .fontWeight(.semibold)
+                        .foregroundStyle(Theme.primaryPurple)
                 }
             }
             .sheet(isPresented: $viewModel.showingCustomTaskForm) {
                 CustomTaskFormView(settings: settings)
+            }
+            .sheet(item: $templateToCustomize) { template in
+                TemplateConfigSheet(
+                    template: template,
+                    settings: settings
+                )
             }
             .sheet(isPresented: $showProUpsell) {
                 ProUpsellSheet(settings: settings, feature: "More than \(Theme.freeTaskLimit) tasks")
@@ -61,53 +72,60 @@ struct TaskLibraryView: View {
     private var myTasksList: some View {
         Group {
             if existingTasks.isEmpty {
-                ContentUnavailableView {
-                    Label("No Active Tasks", systemImage: "checklist")
-                } description: {
+                VStack(spacing: Theme.spacing16) {
+                    Spacer()
+                    HKIconBadge(icon: "checklist", color: Theme.primaryPurple, size: 48)
+                    Text("No Active Tasks")
+                        .font(Theme.sectionHeaderFont)
                     Text("Switch to Library to add tasks.")
+                        .font(Theme.secondaryFont)
+                        .foregroundStyle(Theme.textSecondary)
+                    Spacer()
                 }
             } else {
-                List {
-                    if !isPro {
-                        Section {
-                            HStack {
-                                Text("\(existingTasks.count)/\(Theme.freeTaskLimit) tasks")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                if !canAddMore {
-                                    ProBadgeView()
+                ScrollView {
+                    VStack(spacing: Theme.spacing8) {
+                        if !isPro {
+                            HKCard {
+                                HStack {
+                                    Text("\(existingTasks.count)/\(Theme.freeTaskLimit) tasks")
+                                        .font(Theme.captionFont)
+                                        .foregroundStyle(Theme.textSecondary)
+                                    Spacer()
+                                    if !canAddMore {
+                                        ProBadgeView()
+                                    }
                                 }
                             }
+                            .padding(.horizontal, Theme.spacing16)
                         }
-                    }
 
-                    Section {
                         ForEach(existingTasks) { task in
-                            HStack(spacing: 12) {
-                                Image(systemName: task.icon)
-                                    .font(.subheadline)
-                                    .foregroundStyle(Theme.accent)
-                                    .frame(width: 24)
+                            HKCard {
+                                HStack(spacing: Theme.spacing12) {
+                                    HKIconBadge(icon: task.icon, color: Theme.primaryPurple, size: 36)
 
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(task.name)
-                                        .font(.body)
-                                    Text(task.frequencyDescription)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(task.name)
+                                            .font(Theme.bodyFont)
+                                            .foregroundStyle(colorScheme == .dark ? .white : Theme.textPrimary)
+                                        Text(task.frequencyDescription)
+                                            .font(Theme.captionFont)
+                                            .foregroundStyle(Theme.textSecondary)
+                                    }
+
+                                    Spacer()
+
+                                    StatusBadgeView(status: task.status)
                                 }
-
-                                Spacer()
-
-                                StatusBadgeView(status: task.status)
                             }
-                            .padding(.vertical, 2)
+                            .padding(.horizontal, Theme.spacing16)
                         }
-                        .onDelete(perform: deleteTasks)
+
+                        Spacer(minLength: 40)
                     }
+                    .padding(.top, Theme.spacing8)
                 }
-                .listStyle(.insetGrouped)
             }
         }
     }
@@ -115,9 +133,8 @@ struct TaskLibraryView: View {
     // MARK: - Library
 
     private var libraryList: some View {
-        List {
-            // Custom task
-            Section {
+        ScrollView {
+            VStack(spacing: Theme.spacing8) {
                 Button {
                     if canAddMore {
                         viewModel.showingCustomTaskForm = true
@@ -125,58 +142,81 @@ struct TaskLibraryView: View {
                         showProUpsell = true
                     }
                 } label: {
-                    Label {
-                        Text("Create Custom Task")
-                            .foregroundStyle(.primary)
-                    } icon: {
-                        Image(systemName: "plus.circle.fill")
-                            .foregroundStyle(Theme.accent)
+                    HKCard {
+                        HStack(spacing: Theme.spacing12) {
+                            HKIconBadge(icon: "plus.circle.fill", color: Theme.primaryPurple, size: 36)
+                            Text("Create Custom Task")
+                                .font(Theme.bodyFont)
+                                .foregroundStyle(colorScheme == .dark ? .white : Theme.textPrimary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(Theme.textSecondary)
+                        }
                     }
                 }
-            }
+                .buttonStyle(.plain)
+                .padding(.horizontal, Theme.spacing16)
 
-            // Preloaded tasks
-            Section("Common Tasks") {
+                HStack {
+                    Text("Common Tasks")
+                        .font(Theme.sectionHeaderFont)
+                        .foregroundStyle(colorScheme == .dark ? .white : Theme.textPrimary)
+                    Spacer()
+                }
+                .padding(.horizontal, Theme.spacing20)
+                .padding(.top, Theme.spacing8)
+
                 ForEach(viewModel.filteredTemplates) { template in
-                    HStack(spacing: 12) {
-                        Image(systemName: template.icon)
-                            .font(.subheadline)
-                            .foregroundStyle(Theme.accent)
-                            .frame(width: 24)
+                    let isAdded = viewModel.isTaskAdded(template, existingTasks: existingTasks)
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(template.name)
-                                .font(.body)
-                            Text(frequencyLabel(template))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                    Button {
+                        if isAdded {
+                            viewModel.toggleTask(
+                                template,
+                                existingTasks: existingTasks,
+                                context: modelContext,
+                                settings: settings
+                            )
+                        } else if !canAddMore {
+                            showProUpsell = true
+                        } else {
+                            templateToCustomize = template
                         }
+                    } label: {
+                        HKCard {
+                            HStack(spacing: Theme.spacing12) {
+                                HKIconBadge(icon: template.icon, color: isAdded ? Theme.good : Theme.primaryPurple, size: 36)
 
-                        Spacer()
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(template.name)
+                                        .font(Theme.bodyFont)
+                                        .foregroundStyle(colorScheme == .dark ? .white : Theme.textPrimary)
+                                    Text(frequencyLabel(template))
+                                        .font(Theme.captionFont)
+                                        .foregroundStyle(Theme.textSecondary)
+                                }
 
-                        let isAdded = viewModel.isTaskAdded(template, existingTasks: existingTasks)
-                        Toggle("", isOn: Binding(
-                            get: { isAdded },
-                            set: { _ in
-                                if !isAdded && !canAddMore {
-                                    showProUpsell = true
+                                Spacer()
+
+                                if isAdded {
+                                    HKChip(label: "Added", color: Theme.good)
                                 } else {
-                                    viewModel.toggleTask(
-                                        template,
-                                        existingTasks: existingTasks,
-                                        context: modelContext,
-                                        settings: settings
-                                    )
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.title3)
+                                        .foregroundStyle(Theme.primaryPurple)
                                 }
                             }
-                        ))
-                        .tint(Theme.accent)
+                        }
                     }
-                    .padding(.vertical, 2)
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, Theme.spacing16)
                 }
+
+                Spacer(minLength: 40)
             }
+            .padding(.top, Theme.spacing8)
         }
-        .listStyle(.insetGrouped)
         .searchable(text: $viewModel.searchText, prompt: "Search tasks")
     }
 
@@ -191,13 +231,5 @@ struct TaskLibraryView: View {
             return "Every \(singular)"
         }
         return "Every \(template.frequencyValue) \(template.frequencyType.pluralUnit)"
-    }
-
-    private func deleteTasks(at offsets: IndexSet) {
-        for index in offsets {
-            let task = existingTasks[index]
-            NotificationManager.shared.cancelNotification(for: task)
-            modelContext.delete(task)
-        }
     }
 }

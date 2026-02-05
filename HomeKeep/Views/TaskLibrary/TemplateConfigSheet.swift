@@ -1,22 +1,33 @@
 import SwiftUI
 import SwiftData
 
-struct CustomTaskFormView: View {
+struct TemplateConfigSheet: View {
+    let template: PreloadedTaskTemplate
+    @Bindable var settings: UserSettings
+
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
-    @Bindable var settings: UserSettings
 
-    @State private var name = ""
-    @State private var icon = "wrench"
-    @State private var frequencyType: FrequencyType = .months
-    @State private var frequencyValue = 1
-    @State private var notes = ""
-    @State private var seasonalDate = Date()
-    @State private var showingIconPicker = false
+    @State private var frequencyType: FrequencyType
+    @State private var frequencyValue: Int
+    @State private var seasonalDate: Date
 
-    private var isValid: Bool {
-        !name.trimmingCharacters(in: .whitespaces).isEmpty
+    init(template: PreloadedTaskTemplate, settings: UserSettings) {
+        self.template = template
+        self.settings = settings
+        _frequencyType = State(initialValue: template.frequencyType)
+        _frequencyValue = State(initialValue: template.frequencyValue)
+
+        // Default seasonal date: use template's month/day or Oct 1
+        let calendar = Calendar.current
+        let defaultMonth = template.seasonalMonth ?? 10
+        let defaultDay = template.seasonalDay ?? 1
+        var components = DateComponents()
+        components.year = calendar.component(.year, from: Date())
+        components.month = defaultMonth
+        components.day = defaultDay
+        _seasonalDate = State(initialValue: calendar.date(from: components) ?? Date())
     }
 
     var body: some View {
@@ -26,34 +37,28 @@ struct CustomTaskFormView: View {
 
                 ScrollView {
                     VStack(spacing: Theme.spacing12) {
+                        // Task info
                         HKCard {
-                            VStack(alignment: .leading, spacing: Theme.spacing8) {
-                                Text("Name")
-                                    .font(Theme.captionFont.weight(.semibold))
-                                    .foregroundStyle(Theme.textSecondary)
-                                TextField("e.g., Clean gutters", text: $name)
-                                    .font(Theme.bodyFont)
-                            }
-                        }
+                            HStack(spacing: Theme.spacing12) {
+                                HKIconBadge(icon: template.icon, color: Theme.primaryPurple, size: 44)
 
-                        HKCard {
-                            Button {
-                                showingIconPicker = true
-                            } label: {
-                                HStack(spacing: Theme.spacing12) {
-                                    HKIconBadge(icon: icon, color: Theme.primaryPurple, size: 36)
-                                    Text("Choose Icon")
-                                        .font(Theme.bodyFont)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(template.name)
+                                        .font(Theme.sectionHeaderFont)
                                         .foregroundStyle(colorScheme == .dark ? .white : Theme.textPrimary)
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(Theme.textSecondary)
+                                    if let notes = template.notes {
+                                        Text(notes)
+                                            .font(Theme.captionFont)
+                                            .foregroundStyle(Theme.textSecondary)
+                                            .lineLimit(2)
+                                    }
                                 }
+
+                                Spacer()
                             }
-                            .buttonStyle(.plain)
                         }
 
+                        // Frequency
                         HKCard {
                             VStack(spacing: Theme.spacing12) {
                                 VStack(alignment: .leading, spacing: Theme.spacing8) {
@@ -93,23 +98,12 @@ struct CustomTaskFormView: View {
                                 }
                             }
                         }
-
-                        HKCard {
-                            VStack(alignment: .leading, spacing: Theme.spacing8) {
-                                Text("Notes")
-                                    .font(Theme.captionFont.weight(.semibold))
-                                    .foregroundStyle(Theme.textSecondary)
-                                TextField("Any helpful reminders...", text: $notes, axis: .vertical)
-                                    .font(Theme.bodyFont)
-                                    .lineLimit(3...6)
-                            }
-                        }
                     }
                     .padding(.horizontal, Theme.spacing16)
                     .padding(.top, Theme.spacing8)
                 }
             }
-            .navigationTitle("New Task")
+            .navigationTitle("Add Task")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -120,11 +114,7 @@ struct CustomTaskFormView: View {
                     Button("Add") { addTask() }
                         .fontWeight(.semibold)
                         .foregroundStyle(Theme.primaryPurple)
-                        .disabled(!isValid)
                 }
-            }
-            .sheet(isPresented: $showingIconPicker) {
-                IconPickerView(selectedIcon: $icon)
             }
         }
     }
@@ -135,14 +125,14 @@ struct CustomTaskFormView: View {
         let day = calendar.component(.day, from: seasonalDate)
 
         let task = MaintenanceTask(
-            name: name.trimmingCharacters(in: .whitespaces),
-            icon: icon,
-            notes: notes.isEmpty ? nil : notes,
+            name: template.name,
+            icon: template.icon,
+            notes: template.notes,
             frequencyType: frequencyType,
             frequencyValue: frequencyValue,
             seasonalMonth: frequencyType == .seasonal ? month : nil,
             seasonalDay: frequencyType == .seasonal ? day : nil,
-            isPreloaded: false
+            isPreloaded: true
         )
         modelContext.insert(task)
         NotificationManager.shared.scheduleNotification(for: task, settings: settings)

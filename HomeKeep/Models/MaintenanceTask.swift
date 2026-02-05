@@ -9,6 +9,8 @@ final class MaintenanceTask {
     var notes: String?
     var frequencyTypeRaw: String
     var frequencyValue: Int
+    var seasonalMonth: Int?
+    var seasonalDay: Int?
     var lastCompletedDate: Date?
     var nextDueDate: Date
     var isPreloaded: Bool
@@ -26,6 +28,8 @@ final class MaintenanceTask {
         notes: String? = nil,
         frequencyType: FrequencyType,
         frequencyValue: Int,
+        seasonalMonth: Int? = nil,
+        seasonalDay: Int? = nil,
         lastCompletedDate: Date? = nil,
         nextDueDate: Date? = nil,
         isPreloaded: Bool = false
@@ -36,12 +40,16 @@ final class MaintenanceTask {
         self.notes = notes
         self.frequencyTypeRaw = frequencyType.rawValue
         self.frequencyValue = frequencyValue
+        self.seasonalMonth = seasonalMonth
+        self.seasonalDay = seasonalDay
         self.lastCompletedDate = lastCompletedDate
         self.isPreloaded = isPreloaded
         self.createdAt = Date()
 
         if let nextDueDate {
             self.nextDueDate = nextDueDate
+        } else if frequencyType == .seasonal, let month = seasonalMonth, let day = seasonalDay {
+            self.nextDueDate = Self.nextSeasonalDate(month: month, day: day)
         } else {
             self.nextDueDate = frequencyType.nextDate(from: Date(), value: frequencyValue)
         }
@@ -89,7 +97,7 @@ final class MaintenanceTask {
 
     var frequencyDescription: String {
         if frequencyType == .seasonal {
-            return "Seasonal"
+            return seasonalDateDescription ?? "Seasonal"
         }
         if frequencyValue == 1 {
             let singular = String(frequencyType.pluralUnit.dropLast())
@@ -124,6 +132,45 @@ final class MaintenanceTask {
     func markComplete() {
         let now = Date()
         lastCompletedDate = now
-        nextDueDate = frequencyType.nextDate(from: now, value: frequencyValue)
+        if frequencyType == .seasonal, let month = seasonalMonth, let day = seasonalDay {
+            nextDueDate = Self.nextSeasonalDate(month: month, day: day)
+        } else {
+            nextDueDate = frequencyType.nextDate(from: now, value: frequencyValue)
+        }
+    }
+
+    static func nextSeasonalDate(month: Int, day: Int) -> Date {
+        let calendar = Calendar.current
+        let now = Date()
+        let currentYear = calendar.component(.year, from: now)
+
+        var components = DateComponents()
+        components.month = month
+        components.day = day
+
+        // Try this year first
+        components.year = currentYear
+        if let candidate = calendar.date(from: components), candidate > now {
+            return candidate
+        }
+
+        // Otherwise next year
+        components.year = currentYear + 1
+        return calendar.date(from: components) ?? now
+    }
+
+    var seasonalDateDescription: String? {
+        guard frequencyType == .seasonal, let month = seasonalMonth, let day = seasonalDay else {
+            return nil
+        }
+        var components = DateComponents()
+        components.month = month
+        components.day = day
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM d"
+        if let date = Calendar.current.date(from: components) {
+            return "Every year on \(formatter.string(from: date))"
+        }
+        return nil
     }
 }

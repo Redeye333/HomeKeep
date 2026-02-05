@@ -5,23 +5,14 @@ struct IconPickerView: View {
     @Environment(\.dismiss) private var dismiss
 
     private let icons: [String] = [
-        // Home & Building
         "house", "house.fill", "house.lodge", "building.2",
-        // Tools & Maintenance
         "wrench", "wrench.and.screwdriver", "hammer", "screwdriver",
-        // Water & Plumbing
         "drop", "drop.fill", "drop.triangle", "shower",
-        // Fire & Safety
         "flame", "flame.circle", "sensor", "exclamationmark.triangle",
-        // Air & HVAC
         "wind", "air.conditioner.horizontal", "fan",
-        // Cleaning
         "sparkles", "bubbles.and.sparkles", "trash",
-        // Appliances
         "refrigerator", "washer", "dishwasher", "oven",
-        // Outdoor
         "leaf", "tree", "snowflake", "sun.max",
-        // Misc
         "ant", "paintbrush", "lightbulb", "bolt",
         "lock", "key", "clock", "calendar",
         "door.garage.closed", "car", "battery.100percent",
@@ -33,33 +24,40 @@ struct IconPickerView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 16) {
-                    ForEach(icons, id: \.self) { icon in
-                        Button {
-                            selectedIcon = icon
-                            HapticManager.selectionChanged()
-                            dismiss()
-                        } label: {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(selectedIcon == icon ? Theme.accent : Color(.tertiarySystemFill))
-                                    .frame(height: 52)
+            ZStack {
+                AppBackgroundView()
 
-                                Image(systemName: icon)
-                                    .font(.title3)
-                                    .foregroundStyle(selectedIcon == icon ? .white : .primary)
+                ScrollView {
+                    LazyVGrid(columns: columns, spacing: 16) {
+                        ForEach(icons, id: \.self) { icon in
+                            Button {
+                                selectedIcon = icon
+                                HapticManager.selectionChanged()
+                                dismiss()
+                            } label: {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: Theme.iconRadius, style: .continuous)
+                                        .fill(selectedIcon == icon
+                                            ? LinearGradient(colors: [Theme.primaryPurple, Theme.deepPurple], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                            : LinearGradient(colors: [Color(.tertiarySystemFill)], startPoint: .top, endPoint: .bottom))
+                                        .frame(height: 52)
+
+                                    Image(systemName: icon)
+                                        .font(.title3)
+                                        .foregroundStyle(selectedIcon == icon ? .white : .primary)
+                                }
                             }
                         }
                     }
+                    .padding()
                 }
-                .padding()
             }
             .navigationTitle("Choose Icon")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
+                        .foregroundStyle(Theme.primaryPurple)
                 }
             }
         }

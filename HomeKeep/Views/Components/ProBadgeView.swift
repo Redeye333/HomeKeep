@@ -4,12 +4,12 @@ struct ProBadgeView: View {
     var body: some View {
         Text("PRO")
             .font(.caption2.weight(.bold))
-            .foregroundStyle(.orange)
+            .foregroundStyle(Theme.primaryPurple)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(
                 Capsule()
-                    .fill(.orange.opacity(0.12))
+                    .fill(Theme.primaryPurple.opacity(0.12))
             )
     }
 }
@@ -26,71 +26,83 @@ struct ProUpsellSheet: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                Spacer()
+            ZStack {
+                AppBackgroundView()
 
-                Image(systemName: "star.circle.fill")
-                    .font(.system(size: 56))
-                    .foregroundStyle(.orange.gradient)
+                VStack(spacing: Theme.spacing24) {
+                    Spacer()
 
-                VStack(spacing: 8) {
-                    Text("HomeKeep Pro")
-                        .font(.title2.weight(.bold))
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Theme.primaryPurple.opacity(0.2), Theme.deepPurple.opacity(0.1)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 80, height: 80)
 
-                    Text("\(feature) requires Pro.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
+                        Image(systemName: "star.circle.fill")
+                            .font(.system(size: 40))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Theme.primaryPurple, Theme.deepPurple],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    }
 
-                // Features
-                VStack(alignment: .leading, spacing: 12) {
-                    proFeatureRow("infinity", "Unlimited tasks")
-                    proFeatureRow("widget.small", "Home & Lock Screen widgets")
-                    proFeatureRow("paintbrush", "Custom app icons")
-                    proFeatureRow("square.and.arrow.up", "Export task history")
-                }
-                .padding(.horizontal, 32)
-                .padding(.vertical, 16)
+                    VStack(spacing: Theme.spacing8) {
+                        Text("HomeKeep Pro")
+                            .font(Theme.screenTitleFont)
+                        Text("\(feature) requires Pro.")
+                            .font(Theme.secondaryFont)
+                            .foregroundStyle(Theme.textSecondary)
+                            .multilineTextAlignment(.center)
+                    }
 
-                Spacer()
-
-                Button {
-                    purchasePro()
-                } label: {
-                    Group {
-                        if isPurchasing {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Text("Upgrade for \(Theme.proPrice)")
-                                .font(.headline)
+                    HKCard {
+                        VStack(alignment: .leading, spacing: Theme.spacing12) {
+                            proFeatureRow("infinity", "Unlimited tasks")
+                            proFeatureRow("widget.small", "Home & Lock Screen widgets")
+                            proFeatureRow("paintbrush", "Custom app icons")
+                            proFeatureRow("square.and.arrow.up", "Export task history")
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(Theme.accent)
-                .disabled(isPurchasing)
-                .padding(.horizontal)
+                    .padding(.horizontal, Theme.spacing24)
 
-                Button("Restore Purchases") {
-                    Task {
-                        await storeManager.restorePurchases()
-                        if storeManager.isProUnlocked {
-                            settings.isProUnlocked = true
-                            dismiss()
+                    Spacer()
+
+                    VStack(spacing: Theme.spacing12) {
+                        HKPrimaryButton(
+                            title: "Upgrade for \(Theme.proPrice)",
+                            isLoading: isPurchasing
+                        ) {
+                            purchasePro()
                         }
+
+                        Button("Restore Purchases") {
+                            Task {
+                                await storeManager.restorePurchases()
+                                if storeManager.isProUnlocked {
+                                    settings.isProUnlocked = true
+                                    dismiss()
+                                }
+                            }
+                        }
+                        .font(Theme.captionFont)
+                        .foregroundStyle(Theme.textSecondary)
                     }
+                    .padding(.horizontal, Theme.spacing24)
+                    .padding(.bottom, Theme.spacing24)
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 24)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Close") { dismiss() }
+                        .foregroundStyle(Theme.textSecondary)
                 }
             }
             .alert("Purchase Error", isPresented: $showError) {
@@ -105,13 +117,10 @@ struct ProUpsellSheet: View {
     }
 
     private func proFeatureRow(_ icon: String, _ text: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.body)
-                .foregroundStyle(Theme.accent)
-                .frame(width: 24)
+        HStack(spacing: Theme.spacing12) {
+            HKIconBadge(icon: icon, color: Theme.primaryPurple, size: 32)
             Text(text)
-                .font(.subheadline)
+                .font(Theme.secondaryFont)
         }
     }
 

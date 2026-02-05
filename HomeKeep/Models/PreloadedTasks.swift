@@ -7,6 +7,18 @@ struct PreloadedTaskTemplate: Identifiable {
     let frequencyType: FrequencyType
     let frequencyValue: Int
     let notes: String?
+    let seasonalMonth: Int?
+    let seasonalDay: Int?
+
+    init(name: String, icon: String, frequencyType: FrequencyType, frequencyValue: Int, notes: String?, seasonalMonth: Int? = nil, seasonalDay: Int? = nil) {
+        self.name = name
+        self.icon = icon
+        self.frequencyType = frequencyType
+        self.frequencyValue = frequencyValue
+        self.notes = notes
+        self.seasonalMonth = seasonalMonth
+        self.seasonalDay = seasonalDay
+    }
 
     func toMaintenanceTask() -> MaintenanceTask {
         MaintenanceTask(
@@ -15,6 +27,8 @@ struct PreloadedTaskTemplate: Identifiable {
             notes: notes,
             frequencyType: frequencyType,
             frequencyValue: frequencyValue,
+            seasonalMonth: seasonalMonth,
+            seasonalDay: seasonalDay,
             isPreloaded: true
         )
     }
@@ -118,7 +132,9 @@ struct PreloadedTaskLibrary {
             icon: "snowflake",
             frequencyType: .seasonal,
             frequencyValue: 1,
-            notes: "Disconnect hoses, drain outdoor faucets, and install insulated covers before winter."
+            notes: "Disconnect hoses, drain outdoor faucets, and install insulated covers before winter.",
+            seasonalMonth: 10,
+            seasonalDay: 1
         ),
         PreloadedTaskTemplate(
             name: "AC Service",

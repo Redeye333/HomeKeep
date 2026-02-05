@@ -20,7 +20,7 @@ struct ContentView: View {
                     Label("Settings", systemImage: "gearshape.fill")
                 }
         }
-        .tint(Theme.accent)
+        .tint(Theme.primaryPurple)
         .preferredColorScheme(settings.appearanceMode.colorScheme)
     }
 }
